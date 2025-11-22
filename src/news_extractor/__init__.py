@@ -153,7 +153,7 @@ class ArticleParser:
                         Article(
                             title=current_title,
                             date=current_date,
-                            content="\n".join(current_content),
+                            content="\n".join(current_content).strip(),
                         )
                     )
                 current_title = line.strip()
@@ -169,7 +169,7 @@ class ArticleParser:
                 Article(
                     title=current_title,
                     date=current_date,
-                    content="\n".join(current_content),
+                    content="\n".join(current_content).strip(),
                 )
             )
 
@@ -199,7 +199,7 @@ class ArticleParser:
 
         # Title-case heuristic: most words start with uppercase and line length reasonable
         words = [w for w in line.split() if any(c.isalpha() for c in w)]
-        if words and len(words) <= 12:
+        if words and 1 < len(words) <= 12:
             cap_count = sum(1 for w in words if w[0].isupper())
             if cap_count / len(words) >= 0.6 and 5 < len(line) < 120:
                 return True
