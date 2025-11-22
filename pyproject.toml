@@ -7,7 +7,9 @@ authors = [
     { name = "Kugeleis", email = "kugeleis@wbrief.de" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "pypdf2>=3.0.1",
+]
 
 [project.scripts]
 news-extractor = "news_extractor:main"
