@@ -16,64 +16,77 @@ def _contains(text: str, search: str, case_sensitive: bool) -> bool:
     return search.lower() in text.lower()
 
 
-def _match_in_dataframe(tbl: Any, search: str, case_sensitive: bool) -> bool:
+def _match_in_dataframe(
+    tbl: Any, search_strings: List[str], case_sensitive: bool
+) -> bool:
     try:
         if not isinstance(tbl, pd.DataFrame):
             return False
         df = tbl.astype(str)
-        if case_sensitive:
-            mask = df.apply(lambda col: col.str.contains(search, na=False))
-        else:
-            mask = df.apply(lambda col: col.str.contains(search, case=False, na=False))
-        return bool(mask.any().any())
+        for s in search_strings:
+            if case_sensitive:
+                mask = df.apply(lambda col: col.str.contains(s, na=False))
+            else:
+                mask = df.apply(lambda col: col.str.contains(s, case=False, na=False))
+            if not mask.any().any():
+                return False
+        return True
     except Exception:
         return False
 
 
-def _match_in_sequence(tbl: Sequence[Any], search: str, case_sensitive: bool) -> bool:
+def _match_in_sequence(
+    tbl: Sequence[Any], search_strings: List[str], case_sensitive: bool
+) -> bool:
     # Avoid treating strings/bytes as sequences of cells
     if isinstance(tbl, (str, bytes)):
         return False
 
-    for row in tbl:
-        # row can be a sequence (row) or a single cell
-        if isinstance(row, Sequence) and not isinstance(row, (str, bytes)):
-            for cell in row:
+    def is_present(search: str) -> bool:
+        for row in tbl:
+            # row can be a sequence (row) or a single cell
+            if isinstance(row, Sequence) and not isinstance(row, (str, bytes)):
+                for cell in row:
+                    try:
+                        s = str(cell)
+                    except Exception:
+                        continue
+                    if _contains(s, search, case_sensitive):
+                        return True
+            else:
                 try:
-                    s = str(cell)
+                    s = str(row)
                 except Exception:
                     continue
                 if _contains(s, search, case_sensitive):
                     return True
-        else:
-            try:
-                s = str(row)
-            except Exception:
-                continue
-            if _contains(s, search, case_sensitive):
-                return True
-    return False
+        return False
+
+    return all(is_present(s) for s in search_strings)
 
 
-def _match_in_object(tbl: Any, search: str, case_sensitive: bool) -> bool:
+def _match_in_object(
+    tbl: Any, search_strings: List[str], case_sensitive: bool
+) -> bool:
     try:
         s = str(tbl)
     except Exception:
         return False
-    return _contains(s, search, case_sensitive)
+    return all(_contains(s, search_str, case_sensitive) for search_str in search_strings)
 
 
 def find_tables_containing(
-    news_data: Dict[str, Any], search: str, case_sensitive: bool = False
+    news_data: Dict[str, Any], search_strings: List[str], case_sensitive: bool = False
 ) -> List[Tuple[int, Any]]:
-    """Return a list of (index, table) where any cell contains `search`.
+    """Return a list of (index, table) where the table contains all substrings.
 
     The function supports pandas DataFrame objects (if pandas is installed),
     nested sequences (lists/tuples of rows), and falls back to stringifying
-    the table if necessary. Returns an empty list if `news_data` is falsy or
+    the table if necessary. The substrings can be in different cells.
+    Returns an empty list if `news_data` is falsy or
     contains no tables.
     """
-    if not news_data:
+    if not news_data or not search_strings:
         return []
 
     tables = news_data.get("tables", []) or []
@@ -81,17 +94,17 @@ def find_tables_containing(
 
     for i, tbl in enumerate(tables):
         # 1) pandas DataFrame path (preferred if available)
-        if _match_in_dataframe(tbl, search, case_sensitive):
+        if _match_in_dataframe(tbl, search_strings, case_sensitive):
             matches.append((i, tbl))
             continue
 
         # 2) list-of-rows or nested sequences
-        if _match_in_sequence(tbl, search, case_sensitive):
+        if _match_in_sequence(tbl, search_strings, case_sensitive):
             matches.append((i, tbl))
             continue
 
         # 3) fallback: stringify whole table
-        if _match_in_object(tbl, search, case_sensitive):
+        if _match_in_object(tbl, search_strings, case_sensitive):
             matches.append((i, tbl))
 
     return matches
