@@ -1,6 +1,5 @@
 from typing import Optional
 from dataclasses import dataclass, asdict
-import PyPDF2
 import re
 import pdfplumber
 
@@ -17,11 +16,16 @@ class PDFTextExtractor:
         self.filepath = filepath
 
     def extract_text(self) -> list[str]:
-        texts = []
-        with open(self.filepath, "rb") as file:
-            reader = PyPDF2.PdfReader(file)
-            for page in reader.pages:
-                texts.append(page.extract_text())
+        texts: list[str] = []
+        try:
+            with pdfplumber.open(self.filepath) as pdf:
+                for page in pdf.pages:
+                    # normalize None -> ""
+                    text = page.extract_text()
+                    texts.append(text or "")
+        except Exception:
+            return texts
+
         return texts
 
     def extract_tables(self) -> list[dict]:

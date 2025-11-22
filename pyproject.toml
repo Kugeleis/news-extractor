@@ -10,7 +10,7 @@ requires-python = ">=3.12.0"
 dependencies = [
     "pandas>=2.3.3",
     "pdfplumber>=0.11.8",
-    "pypdf2>=3.0.1",
+    # pypdf2 removed — using pdfplumber for text + table extraction
     "rich>=14.2.0",
 ]
 

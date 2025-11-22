@@ -4,13 +4,12 @@ from unittest.mock import MagicMock, patch
 from src.news_extractor import PDFTextExtractor
 
 
-@patch("builtins.open")
-@patch("PyPDF2.PdfReader")
-def test_extract_text(mock_pdf_reader, mock_open):
+@patch("pdfplumber.open")
+def test_extract_text(mock_pdfplumber_open):
     # Arrange
     mock_page = MagicMock()
     mock_page.extract_text.return_value = "This is a page."
-    mock_pdf_reader.return_value.pages = [mock_page, mock_page]
+    mock_pdfplumber_open.return_value.__enter__.return_value.pages = [mock_page, mock_page]
 
     # Act
     extractor = PDFTextExtractor("dummy.pdf")
