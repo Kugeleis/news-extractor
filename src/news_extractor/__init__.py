@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import Optional
 from dataclasses import dataclass, asdict
 import PyPDF2
 import re
@@ -16,7 +16,7 @@ class PDFTextExtractor:
     def __init__(self, filepath: str):
         self.filepath = filepath
 
-    def extract_text(self) -> List[str]:
+    def extract_text(self) -> list[str]:
         texts = []
         with open(self.filepath, "rb") as file:
             reader = PyPDF2.PdfReader(file)
@@ -24,7 +24,7 @@ class PDFTextExtractor:
                 texts.append(page.extract_text())
         return texts
 
-    def extract_tables(self) -> List[Dict]:
+    def extract_tables(self) -> list[dict]:
         """Detect tables in the PDF and return them as a list of dicts.
 
         Each table dict contains: `page` (1-based), `table_index` (0-based on page),
@@ -33,7 +33,7 @@ class PDFTextExtractor:
         Single-responsibility: this method orchestrates page iteration and delegates
         normalization/row conversion to helper methods for readability and testability.
         """
-        tables_out: List[Dict] = []
+        tables_out: list[dict] = []
         try:
             with pdfplumber.open(self.filepath) as pdf:
                 for i, page in enumerate(pdf.pages):
@@ -47,7 +47,7 @@ class PDFTextExtractor:
 
         return tables_out
 
-    def _extract_tables_from_page(self, page) -> List[List[List[str]]]:
+    def _extract_tables_from_page(self, page) -> list[list[list[str]]]:
         """Return raw table data from a pdfplumber page.
 
         Kept as a separate method so it can be mocked or extended later.
@@ -58,7 +58,7 @@ class PDFTextExtractor:
             raw = []
         return raw
 
-    def _table_to_dict(self, page_index: int, table_index: int, table: List[List]) -> Optional[Dict]:
+    def _table_to_dict(self, page_index: int, table_index: int, table: list[list]) -> Optional[dict]:
         """Convert a single raw table into the public dict format.
 
         Handles normalization and conversion to row dictionaries.
@@ -70,7 +70,7 @@ class PDFTextExtractor:
         rows = self._rows_from_table(norm_table)
         return {"page": page_index + 1, "table_index": table_index, "rows": rows}
 
-    def _normalize_table(self, table: List[List]) -> List[List[str]]:
+    def _normalize_table(self, table: list[list]) -> list[list[str]]:
         """Normalize raw table cells into strings and pad rows to same length.
 
         - Strip text cells
@@ -88,7 +88,7 @@ class PDFTextExtractor:
                 r.extend([""] * (max_cols - len(r)))
         return converted
 
-    def _has_header(self, header_row: List[str]) -> bool:
+    def _has_header(self, header_row: list[str]) -> bool:
         """Heuristic to decide whether a row is a header.
 
         Simple rule: if any non-empty string present, treat it as header.
@@ -96,7 +96,7 @@ class PDFTextExtractor:
         """
         return any(bool(cell) for cell in header_row)
 
-    def _rows_from_table(self, norm_table: List[List[str]]) -> List[Dict]:
+    def _rows_from_table(self, norm_table: list[list[str]]) -> list[dict]:
         """Convert normalized table into list of row dicts.
 
         - If the first row looks like a header, use it for keys.
@@ -107,7 +107,7 @@ class PDFTextExtractor:
 
         max_cols = max(len(r) for r in norm_table)
         header = norm_table[0]
-        rows: List[Dict] = []
+        rows: list[dict] = []
 
         if self._has_header(header):
             keys = [h if h else f"col_{idx+1}" for idx, h in enumerate(header)]
@@ -128,21 +128,21 @@ class PDFTextExtractor:
 
 
 class ArticleParser:
-    def __init__(self, text_pages: List[str]):
+    def __init__(self, text_pages: list[str]):
         self.text_pages = text_pages
 
-    def parse_articles(self) -> List[Article]:
+    def parse_articles(self) -> list[Article]:
         articles = []
         for text in self.text_pages:
             articles.extend(self._parse_page(text))
         return articles
 
-    def _parse_page(self, text: str) -> List[Article]:
+    def _parse_page(self, text: str) -> list[Article]:
         # Example split - adjust splitting logic for your PDF format
         if not text:
             return []
 
-        articles: List[Article] = []
+        articles: list[Article] = []
         lines = text.split("\n")
         current_title, current_date, current_content = None, None, []
 
@@ -231,7 +231,7 @@ class NewsPDFExtractor:
     def __init__(self, pdf_path: str):
         self.pdf_path = pdf_path
 
-    def extract(self) -> Dict:
+    def extract(self) -> dict:
         text_extractor = PDFTextExtractor(self.pdf_path)
         pages = text_extractor.extract_text()
         tables = text_extractor.extract_tables()
