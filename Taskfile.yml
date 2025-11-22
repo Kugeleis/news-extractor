@@ -1,0 +1,62 @@
+version: '3'
+
+# Taskfile.yml for `task` (go-task) — simple wrapper for common project commands
+# Requires: go-task (https://github.com/go-task/task)
+
+tasks:
+  test:
+    desc: "Run pytest"
+    cmds:
+      - uv run pytest
+
+  lint:
+    desc: "Run ruff (lint)"
+    cmds:
+      - uv run ruff check .
+
+  fmt:
+    desc: "Format code with ruff"
+    cmds:
+      - uv run ruff format .
+
+  typecheck:
+    desc: "Run mypy (dev dependency)"
+    cmds:
+      - python -m mypy src/
+
+  sync:
+    desc: "Sync dependencies"
+    cmds:
+      - uv sync
+
+  run:
+    desc: "Run the CLI"
+    cmds:
+      - uv run news-extractor
+
+  # Versioning tasks (uses bump-my-version via `uv run bump-my-version`)
+  version-show:
+    desc: "Show current version"
+    cmds:
+      - uv run bump-my-version show current_version
+
+  version-bump-patch:
+    desc: "Bump patch version"
+    cmds:
+      - uv run bump-my-version bump patch
+
+  version-bump-minor:
+    desc: "Bump minor version"
+    cmds:
+      - uv run bump-my-version bump minor
+
+  version-bump-major:
+    desc: "Bump major version"
+    cmds:
+      - uv run bump-my-version bump major
+
+  version-replace:
+    desc: "Replace version to NEW_VERSION (set env NEW_VERSION)"
+    cmds:
+      - sh -c 'if [ -z "${NEW_VERSION}" ]; then echo "Set NEW_VERSION environment variable"; exit 1; fi'
+      - uv run bump-my-version replace --new-version "${NEW_VERSION}"
